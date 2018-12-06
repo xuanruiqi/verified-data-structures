@@ -276,7 +276,7 @@ Section insert.
     end.
 
   (* encode height using a dependent pair *) 
-  Program Definition insert' {h} v (t : tree h) :
+  Program Definition insert {h} v (t : tree h) :
     { res : { h' : nat & tree h' } |
       is_search_tree t -> (flatten (projT2 res) = seq_insert v (flatten t) /\
       is_search_tree (projT2 res)) } :=
@@ -293,7 +293,5 @@ Section insert.
       exact. simpl in H. rewrite /is_search_tree //= H. apply: sorted_insert.
       by rewrite /is_search_tree in H0. exact.
   Qed.
-
-  Definition insert {h} v (t : tree h) := projT2 (insert' v t).
-
+  
 End insert.
