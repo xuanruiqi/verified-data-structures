@@ -68,7 +68,33 @@ Section sorted.
   Qed.
   
 End sorted.
+ 
+Section mem.
 
+  Lemma notin_sorted_cons y x s : sorted (x :: s) -> y < x -> y \notin (x :: s).
+  Proof.
+    elim: s x y => [| h s IH] x y //. by rewrite mem_seq1 neq_ltn => _ ->.
+    move => H Hlt. rewrite in_cons negb_or neq_ltn Hlt //=. apply: IH.
+    apply: sorted_rest. exact: H. simpl in H. move: H => /andP [Hleq _].
+    apply: leq_trans. exact: Hlt. exact: Hleq.
+  Qed.
+    
+  Lemma in_sorted_left y x s t : sorted (s ++ x :: t) -> y < x -> y \in (s ++ x :: t) = (y \in s).
+  Proof.
+    elim: s => [| h s] //. rewrite cat0s => H Hlt. rewrite in_nil.
+    apply: negbTE. exact: notin_sorted_cons.
+    move => IH H Hlt. rewrite cat_cons !in_cons IH //=. apply: sorted_rest.
+    rewrite -cat_cons. exact: H.
+  Qed.
+
+  Lemma in_sorted_right y x s t : sorted (s ++ x :: t) -> y > x -> y \in (s ++ x :: t) = (y \in t).
+  Proof.
+    rewrite -sorted_cat_cons_e. rewrite mem_cat in_cons.
+    move => /andP [/andP [Hall Hs] Hxt] Hxy. have Hnotin: y \notin s. 
+  Admitted.    
+    
+End mem.
+    
 
 Section spec.
 

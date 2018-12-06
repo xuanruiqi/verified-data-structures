@@ -1,3 +1,5 @@
+(* Dependently typed 2-3 trees *)
+
 From mathcomp Require Import all_ssreflect.
 Require Import Compare_dec Program.
 Require Import vds_sort.
@@ -46,26 +48,41 @@ End defn.
 Section search_tree.
 
   Definition is_search_tree {h} (tr : tree h) := sorted (flatten tr).
-
-  Fixpoint search {h} (x : nat) (tr : tree h) :=
+  
+  Fixpoint member {h} (x : nat) (tr : tree h) :=
     match tr with
     | Leaf => false
     | Node2 _ l v r => if x < v
-                       then search x l
+                       then member x l
                        else if x == v
                             then true
-                            else search x r
+                            else member x r
     | Node3 _ l v m v' r => if x < v
-                            then search x l
+                            then member x l
                             else if x == v
                                  then true
                                  else if x < v'
-                                      then search x m
+                                      then member x m
                                       else if x == v'
                                            then true
-                                           else search x r
+                                           else member x r
     end.
-    
+
+  Lemma member_correct {h} x (t : tree h) : is_search_tree t -> member x t = (x \in (flatten t)).
+  Proof.
+    elim: t => [| h' l IHl v r IHr | h' l IHl a m IHm b r IHr] //=.
+    rewrite /is_search_tree /= => H. case: ifP => Hlt //=.
+    rewrite in_sorted_left. rewrite IHl //= /is_search_tree. apply: cat_sorted_l. exact: H.
+    exact: H. exact: Hlt.
+    case: ifP => Heq //=. by rewrite (eqP Heq) mem_cat mem_head orbT.
+    rewrite in_sorted_right. rewrite IHr //= /is_search_tree. apply: cat_sorted_r.
+    rewrite -cat_rcons in H. exact: H. exact: H. by rewrite ltnNge leq_eqVlt Hlt Heq.
+    case: ifP => Hlt_a //=. rewrite /is_search_tree /= => H. rewrite IHl.
+    rewrite in_sorted_left //= /is_search_tree. apply: cat_sorted_l. exact: H.
+    case: ifP => Heq_a //=. rewrite /is_search_tree /= => H. rewrite (eqP Heq_a).
+    by rewrite mem_cat in_cons eq_refl orbT.
+  Admitted.
+  
 End search_tree.
 
 Section insert.
@@ -277,9 +294,9 @@ Section insert.
 
   (* encode height using a dependent pair *) 
   Program Definition insert {h} v (t : tree h) :
-    { res : { h' : nat & tree h' } |
-      is_search_tree t -> (flatten (projT2 res) = seq_insert v (flatten t) /\
-      is_search_tree (projT2 res)) } :=
+    { (h', t') : { h' : nat & tree h' } |
+      is_search_tree t -> (flatten t' = seq_insert v (flatten t) /\
+      is_search_tree t') } :=
     let (pt, _) := put v t in
     let h' := put_height pt in existT tree h' (fix_tree pt).
 
