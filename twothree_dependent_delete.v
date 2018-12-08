@@ -98,37 +98,55 @@ Section search_tree.
   
 End search_tree.
 
+From Equations Require Import Equations.
+
 Section insert.
 
   Inductive put_tree : nat -> Type :=
   (* wraps a well-formed tree *)
   | T : forall h, tree h -> put_tree h
   (* an intermediate node that is disregarded in height calculation *)
-  | Put : forall h, tree h -> nat -> tree h -> put_tree h.
+  | Put : forall h, tree h -> nat -> tree h -> put_tree h
+  (* another intermediate representation that represents a "virtual" node *)
+  | Taken : forall h, tree h -> put_tree h.+1.
 
   Definition flattenp {h} (pt : put_tree h) :=
     match pt with
     | T _ tr => flatten tr
     | Put _ l a r => flatten l ++ a :: flatten r
-    end.
-  
-  Program Definition fix_2_l {h} (l : put_tree h) v (r : tree h) : { t' : tree h.+1 | flatten t' = flattenp l ++ v :: flatten r } :=
-    match l with
-    | Put _ t1 a t2 => Node3 t1 a t2 v r
-    | T _ tr => Node2 tr v r
+    | Taken _ t => flatten t
     end.
 
+  Program Definition fix_2_l {h : nat} (l : put_tree h) (v : nat) (r : tree h)
+    : { t' : put_tree h.+1 | flattenp t' = flattenp l ++ v :: flatten r } :=
+    match l with
+    | Put _ t1 a t2 => T (Node3 t1 a t2 v r)
+    | Taken _ t1 => match r with
+                    | Leaf => T Leaf
+                    | Node2 _ t2 b t3 => Taken (Node3 t1 v t2 b t3)
+                    | Node3 _ t2 b t3 c t4 => T (Node2 (Node2 t1 v t2) b (Node2 t3 c t4))
+                    end
+    | T _ tr => T (Node2 tr v r)
+    end.
+  
   Next Obligation.
   Proof.
     rewrite /eq_rect. destruct fix_2_l_obligation_2 => //=. rewrite -Heq_l //=.
-    by rewrite -!cat_cons -catA.
+    by rewrite -cat_cons -catA.
   Qed.
 
   Next Obligation.
-  Proof.
-    rewrite /eq_rect. destruct fix_2_l_obligation_5 => //=. by rewrite -Heq_l.
+  Admitted.
+
+
+  Next Obligation.
+  Admitted.
+
+  Next Obligation.
+    rewrite /eq_rect. destruct fix_2_l_obligation_15 => //=. by rewrite -Heq_l.
   Qed.
-  
+
+  (*
   Program Definition fix_2_r {h} (l : tree h) v (r : put_tree h) : { t' : tree h.+1 | flatten t' = flatten l ++ v :: flattenp r }:=
     match r with
     | Put _ t2 b t3 => Node3 l v t2 b t3
@@ -323,5 +341,8 @@ Section insert.
       exact. simpl in H. rewrite /is_search_tree //= H. apply: sorted_insert.
       by rewrite /is_search_tree in H0. exact.
   Qed.
+  
+   *)
+
   
 End insert.
