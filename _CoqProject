@@ -1,6 +1,7 @@
 vds_sort.v
 quicksort.v
 twothree_dependent.v
+twothree_dependent_delete.v
 red_black.v
 
 -R . verified_data_structures
